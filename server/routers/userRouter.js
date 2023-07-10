@@ -13,4 +13,8 @@ router.post(
     userController.getPostOfFollowingController
 );
 
+router.get("/getMyPosts", requireUser, userController.getMyPostsController);
+router.get("/getUserPosts", requireUser, userController.getUserPostsController);
+router.delete("/", requireUser, userController.deleteMyProfileController);
+
 module.exports = router;

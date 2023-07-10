@@ -55,7 +55,84 @@ const getPostOfFollowingController = async (req, res) => {
     }
 };
 
+const getMyPostsController = async (req, res) => {
+    try {
+        const curUserId = req._id;
+        const allUserPosts = await Post.find({
+            owner: curUserId,
+        }).populate("likes");
+
+        return res.send(success(200, { allUserPosts }));
+    } catch (e) {
+        return res.send(error(500, e.message));
+    }
+};
+
+const getUserPostsController = async (req, res) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            return res.send(error(400, "userId is required"));
+        }
+        const allUserPosts = await Post.find({
+            owner: userId,
+        }).populate("likes");
+
+        return res.send(success(200, { allUserPosts }));
+    } catch (e) {
+        return res.send(error(500, e.message));
+    }
+};
+
+const deleteMyProfileController = async (req, res) => {
+    try {
+        const curUserId = req._id;
+        const curUser = await User.findById(curUserId);
+
+        await Post.deleteMany({
+            owner: curUserId,
+        });
+
+        curUser.followers.forEach(async (followerId) => {
+            const follower = await User.findById(followerId);
+            const index = follower.followings.indexOf(curUserId);
+            follower.followings.splice(index, 1);
+            await follower.save();
+        });
+
+        curUser.followings.forEach(async (followingId) => {
+            const following = await User.findById(followingId);
+            const index = following.followers.indexOf(curUserId);
+            following.followers.splice(index, 1);
+            await following.save();
+        });
+
+        const allPosts = await Post.find();
+
+        allPosts.forEach(async (post) => {
+            const index = post.likes.indexOf(curUserId);
+            post.likes.splice(index, 1);
+            await post.save();
+        });
+
+        await curUser.deleteOne();
+
+        res.clearCookie("jwt", {
+            httpOnly: true,
+            secure: true,
+        });
+
+        return res.send(success(200, "user deleted"));
+    } catch (e) {
+        return res.send(error(500, e.message));
+    }
+};
+
 module.exports = {
     followOrUnfollowUserController,
     getPostOfFollowingController,
+    getMyPostsController,
+    getUserPostsController,
+    deleteMyProfileController,
 };
