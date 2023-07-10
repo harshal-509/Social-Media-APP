@@ -6,6 +6,7 @@ const postsRouter = require("./routers/postsRouter");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const UserRouter = require("./routers/userRouter");
 
 dotenv.config("./.env");
 
@@ -24,6 +25,7 @@ app.use(
 
 app.use("/auth", authRouter);
 app.use("/posts", postsRouter);
+app.use('/user',UserRouter)
 
 app.get("/", (req, res) => {
     res.status(200).send("OK from Server");
@@ -36,3 +38,8 @@ dbConnect();
 app.listen(PORT, () => {
     console.log(`listening on port: ${PORT}`);
 });
+
+
+// getMyposts
+// deleteMyProfile
+// getUserposts
