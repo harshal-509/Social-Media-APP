@@ -38,8 +38,3 @@ dbConnect();
 app.listen(PORT, () => {
     console.log(`listening on port: ${PORT}`);
 });
-
-
-// getMyposts
-// deleteMyProfile
-// getUserposts
