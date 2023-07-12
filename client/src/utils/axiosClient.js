@@ -25,27 +25,25 @@ axiosClient.interceptors.response.use(async (response) => {
     const originalRequest = response.config;
     const status = data.statusCode;
     const error = data.error;
-    if (
-        status === 401 &&
-        originalRequest.url ===
-            `${process.env.REACT_APP_SERVER_BASE_URL}/auth/refresh/`
-    ) {
-        removeItem(KEY_ACCESS_TOKEN);
-        window.location.replace("/login", "_self");
-        return Promise.reject(error);
-    }
-
-    if (status === 401) {
-        const response = await axios.create({
-            withCredentials:true,
-        }).get(`${process.env.REACT_APP_SERVER_BASE_URL}/auth/refresh/`)
+    if (status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        const response = await axios
+            .create({
+                withCredentials: true,
+            })
+            .get(`${process.env.REACT_APP_SERVER_BASE_URL}/auth/refresh/`);
         if (response.status === "ok") {
             setItem(KEY_ACCESS_TOKEN, response.result.accessToken);
             originalRequest.headers[
                 "Authorization"
             ] = `Bearer ${response.result.accessToken}`;
             return axios(originalRequest);
+        }else{
+            removeItem(KEY_ACCESS_TOKEN);
+            window.location.replace("/login", "_self");
+            return Promise.reject(error);
         }
+    
     }
     return Promise.reject(error);
 });
