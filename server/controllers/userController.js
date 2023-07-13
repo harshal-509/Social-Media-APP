@@ -24,39 +24,42 @@ const followOrUnfollowUserController = async (req, res) => {
             curUser.followings.splice(followingindex, 1);
             const followerindex = userToFollow.followers.indexOf(curUser);
             userToFollow.followers.splice(followerindex, 1);
-            await userToFollow.save();
-            await curUser.save();
-            return res.send(success(200, "User unfollowed"));
         } else {
             userToFollow.followers.push(curUserId);
             curUser.followings.push(userIdToFollow);
-
-            await userToFollow.save();
-            await curUser.save();
-            return res.send(success(200, "User followed"));
         }
+        await userToFollow.save();
+        await curUser.save();
+        return res.send(success(200, { user: userToFollow }));
     } catch (e) {
         return res.send(error(500, e.message));
     }
 };
 
-const getPostOfFollowingController = async (req, res) => {
+const getFeedDataController = async (req, res) => {
     try {
         const curUserId = req._id;
-        const curUser = await User.findById(curUserId);
-        console.log(curUser);
-        const posts = await Post.find({
+        const curUser = await User.findById(curUserId).populate("followings");
+        const fullPosts = await Post.find({
             owner: {
                 $in: curUser.followings,
             },
+        }).populate("owner");
+        const posts = fullPosts
+            .map((item) => mapPostOutput(item, req._id))
+            .reverse();
+        const follwingsIds = curUser.followings.map((item) => item._id);
+        follwingsIds.push(req._id )
+        const suggestions = await User.find({
+            _id: {
+                $nin: follwingsIds,
+            },
         });
-
-        return res.send(success(200, posts));
+        return res.send(success(200, { ...curUser._doc, suggestions, posts }));
     } catch (e) {
         return res.send(error(500, e.message));
     }
 };
-
 const getMyPostsController = async (req, res) => {
     try {
         const curUserId = req._id;
@@ -188,7 +191,7 @@ const getUserProfileController = async (req, res) => {
 
 module.exports = {
     followOrUnfollowUserController,
-    getPostOfFollowingController,
+    getFeedDataController,
     getMyPostsController,
     getUserPostsController,
     deleteMyProfileController,
